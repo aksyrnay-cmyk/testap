@@ -3,466 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bilim Portaly - Оқу Платформасы</title>
+    <title>Білім Порталы</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .hidden-section { display: none; }
-        .timer-critical { color: #ef4444; animation: pulse 1s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    </style>
-</head>
-<body class="min-h-screen flex flex-col">
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDhGrRS_J1c3uQf-SUlsG2QuSjHRnwlPCU",
+            authDomain: "aslan-4bc5c.firebaseapp.com",
+            projectId: "aslan-4bc5c",
+            storageBucket: "aslan-4bc5c.firebasestorage.app",
+            messagingSenderId: "655221985403",
+            appId: "1:655221985403:web:05aadfcbb48e5b19fb52de",
+            measurementId: "G-70E4K0E9EC"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, onSnapshot, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        window.handleAuth = async (type) => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            const loader = document.getElementById('loader');
+            
+            if (!email || !pass) { alert('Барлық жолдарды толтырыңыз'); return; }
+            loader.classList.remove('hidden');
+            
+            try {
+                if (type === 'reg') {
+                    await auth.createUserWithEmailAndPassword(email, pass);
+                    alert('Тіркелдіңіз!');
+                } else {
+                    await auth.signInWithEmailAndPassword(email, pass);
+                }
+            } catch (e) {
+                alert('Қате: ' + e.message);
+                loader.classList.add('hidden');
+            }
+        };
 
-    // Платформаның Firebase конфигурациясы
-    const firebaseConfig = {
-        apiKey: "AIzaSyDhGrRS_J1c3uQf-SUlsG2QuSjHRnwlPCU",
-        authDomain: "aslan-4bc5c.firebaseapp.com",
-        projectId: "aslan-4bc5c",
-        storageBucket: "aslan-4bc5c.firebasestorage.app",
-        messagingSenderId: "655221985403",
-        appId: "1:655221985403:web:05aadfcbb48e5b19fb52de",
-        measurementId: "G-70E4K0E9EC"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'edu-platform-001';
-
-    let currentUser = null;
-    let userData = null;
-    let timerInterval = null;
-    
-    const questions = [
-        { q: "XX ғ басында қазақ халқын біріктіруді көздеген ұлт-азаттық қозғалыс?", a: "Алаш", options: ["Алаш", "Үш жүз", "Түркістан", "Жас қазақ"] },
-        { q: "Ахмет Байтұрсынов пен Мағжан Жұмабаев кімдер?", a: "Алаш партиясының қайраткерлері", options: ["Алаш партиясының қайраткерлері", "Кеңес өкіметінің басшылары", "Үш жүз партиясының мүшелері", "Жазушылар одағының төрағалары"] },
-        { q: "Қазақ жауынгерлерінің жалпыұлттық ұраны?", a: "Алаш", options: ["Алаш", "Аруақ", "Отан", "Ел"] },
-        { q: "«Қазақ» сөзінің баламасы?", a: "Алаш", options: ["Алаш", "Түркі", "Сақ", "Ғұн"] },
-        { q: "1905 ж. Оралдағы съездің нәтижесі?", a: "кадет партиясының қазақ филиалын құру әрекеті жасалды", options: ["кадет партиясының қазақ филиалын құру әрекеті жасалды", "Алаш партиясы құрылды", "Кеңес өкіметі орнады", "Азамат соғысы басталды"] },
-        { q: "1906 ж. II Қазақ съезі өткен қала?", a: "Семей", options: ["Семей", "Орал", "Орынбор", "Алматы"] },
-        { q: "«Алаш» партиясының арнайы баспасөз органы?", a: "Қазақ", options: ["Қазақ", "Серке", "Айқап", "Ұран"] },
-        { q: "1907 ж. Санкт-Петербургте шығарылған алғашқы ұлттық газет?", a: "«Серке»", options: ["«Серке»", "«Қазақ»", "«Дала уалаяты»", "«Түркістан уалаяты»"] },
-        { q: "1913 жылдан бастап «Қазақ» газеті шығарыла бастаған қала?", a: "Орынбор", options: ["Орынбор", "Омбы", "Семей", "Ташкент"] },
-        { q: "1917 ж. шілдеде Алаш партиясы қойған негізгі талап?", a: "Қазақтардың ұлттық автономия алуы", options: ["Қазақтардың ұлттық автономия алуы", "Патшаны тақтан тайдыру", "Кеңес өкіметін орнату", "Жерді мемлекетке беру"] }
-        // Қалған сұрақтарды осы форматта қосуға болады...
-    ];
-
-    
-    // UI элементтерін алу
-    const authSection = document.getElementById('auth-section');
-    const mainSection = document.getElementById('main-section');
-    const olympSection = document.getElementById('olympiad-section');
-    const quizSection = document.getElementById('quiz-section');
-    const teacherSection = document.getElementById('teacher-section');
-    const loader = document.getElementById('loader');
-
-    // Көріністі ауыстыру
-    function showView(viewId) {
-        document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden-section'));
-        document.getElementById(viewId).classList.remove('hidden-section');
-    }
-
-    // Тіркелу және Кіру
-    window.handleAuth = async (type) => {
-        const email = document.getElementById('email').value;
-        const pass = document.getElementById('pass').value;
-        if (!email || !pass) return alert('Деректерді толық толтырыңыз');
-
-        try {
-            loader.classList.remove('hidden-section');
-            if (type === 'reg') {
-                const res = await createUserWithEmailAndPassword(auth, email, pass);
-                await setDoc(doc(db, 'artifacts', appId, 'users', res.user.uid, 'profile'), {
-                    email, role: email.includes('teacher') ? 'teacher' : 'student',
-                    progress: { olympStatus: 'not-started', quizScore: 0 }
-                });
+        firebase.auth().onAuthStateChanged((user) => {
+            document.getElementById('loader').classList.add('hidden');
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('main-section').classList.remove('hidden');
             } else {
-                await signInWithEmailAndPassword(auth, email, pass);
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('main-section').classList.add('hidden');
             }
-        } catch (e) {
-            alert('Қате: ' + e.message);
-        } finally {
-            loader.classList.add('hidden-section');
-        }
-    };
-
-    // Шығу
-    window.logout = () => signOut(auth);
-
-    // Авторизация күйін бақылау
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            currentUser = user;
-            const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile');
-            const snap = await getDoc(docRef);
-            userData = snap.data();
-            
-            document.getElementById('user-email').innerText = user.email;
-            if (userData.role === 'teacher') {
-                document.getElementById('teacher-btn').classList.remove('hidden-section');
-            }
-            showView('dashboard-view');
-            authSection.classList.add('hidden-section');
-            mainSection.classList.remove('hidden-section');
-        } else {
-            authSection.classList.remove('hidden-section');
-            mainSection.classList.add('hidden-section');
-        }
-    });
-
-    window.startOlympiad = async () => {
-        const olympRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'olympiad');
-        const snap = await getDoc(olympRef);
-        
-        let startTime;
-        if (snap.exists()) {
-            if (snap.data().status === 'submitted') return alert('Сіз тапсырманы орындап қойдыңыз!');
-            startTime = snap.data().startTime;
-        } else {
-            startTime = Date.now();
-            await setDoc(olympRef, { startTime, status: 'in-progress' });
-        }
-
-        showView('olympiad-view');
-        startTimer(startTime);
-    };
-
-    function startTimer(startTime) {
-        const duration = 2 * 60 * 60 * 1000; // 2 сағат
-        clearInterval(timerInterval);
-        
-        timerInterval = setInterval(() => {
-            const now = Date.now();
-            const elapsed = now - startTime;
-            const remaining = duration - elapsed;
-
-            if (remaining <= 0) {
-                clearInterval(timerInterval);
-                submitOlympiad(true);
-                return;
-            }
-
-            const h = Math.floor(remaining / 3600000);
-            const m = Math.floor((remaining % 3600000) / 60000);
-            const s = Math.floor((remaining % 60000) / 1000);
-            
-            const timerEl = document.getElementById('olymp-timer');
-            timerEl.innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-            if (remaining < 600000) timerEl.classList.add('timer-critical');
-        }, 1000);
-    }
-
-    window.submitOlympiad = async (isAuto = false) => {
-        const essay = document.getElementById('essay-text').value;
-        const fileInput = document.getElementById('essay-file');
-        const file = fileInput.files[0];
-        
-        if (!isAuto && !essay) return alert('Эссе жазыңыз!');
-
-        loader.classList.remove('hidden-section');
-        try {
-            let fileUrl = "";
-            if (file) {
-                const storageRef = ref(storage, `artifacts/${appId}/users/${currentUser.uid}/essay_${Date.now()}`);
-                await uploadBytes(storageRef, file);
-                fileUrl = await getDownloadURL(storageRef);
-            }
-
-            const olympRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'olympiad');
-            await updateDoc(olympRef, {
-                essayText: essay,
-                imageUrl: fileUrl,
-                status: 'submitted',
-                submittedAt: Date.now()
-            });
-
-            clearInterval(timerInterval);
-            alert('Тапсырма сәтті жіберілді!');
-            showView('dashboard-view');
-        } catch (e) {
-            alert('Қате: ' + e.message);
-        } finally {
-            loader.classList.add('hidden-section');
-        }
-    };
-
-    let currentQuizIndex = 0;
-    let score = 0;
-    let userAnswers = [];
-
-    window.startQuiz = () => {
-        currentQuizIndex = 0;
-        score = 0;
-        userAnswers = [];
-        showView('quiz-view');
-        renderQuestion();
-    };
-
-    function renderQuestion() {
-        const q = questions[currentQuizIndex];
-        const container = document.getElementById('quiz-container');
-        container.innerHTML = `
-            <div class="mb-6">
-                <span class="text-sm text-blue-600 font-semibold">Сұрақ ${currentQuizIndex + 1}/${questions.length}</span>
-                <h3 class="text-xl font-bold mt-2">${q.q}</h3>
-            </div>
-            <div class="grid grid-cols-1 gap-3">
-                ${q.options.map(opt => `
-                    <button onclick="selectAnswer('${opt}')" class="p-4 text-left border-2 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-200">
-                        ${opt}
-                    </button>
-                `).join('')}
-            </div>
-        `;
-    }
-
-    window.selectAnswer = (answer) => {
-        const q = questions[currentQuizIndex];
-        userAnswers.push({ q: q.q, selected: answer, correct: q.a });
-        if (answer === q.a) score++;
-
-        if (currentQuizIndex < questions.length - 1) {
-            currentQuizIndex++;
-            renderQuestion();
-        } else {
-            finishQuiz();
-        }
-    };
-
-    async function finishQuiz() {
-        const container = document.getElementById('quiz-container');
-        const resultsRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'quiz_results');
-        await setDoc(resultsRef, { score, total: questions.length, date: Date.now() });
-
-        container.innerHTML = `
-            <div class="text-center mb-8">
-                <div class="inline-block p-6 bg-green-100 rounded-full mb-4">
-                    <i class="fas fa-check-circle text-5xl text-green-500"></i>
-                </div>
-                <h2 class="text-3xl font-bold">Аяқталды!</h2>
-                <p class="text-gray-600 mt-2">Сіздің нәтижеңіз: <span class="font-bold text-blue-600">${score}/${questions.length}</span></p>
-            </div>
-            <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
-                ${userAnswers.map((ua, i) => `
-                    <div class="p-4 rounded-lg ${ua.selected === ua.correct ? 'bg-green-50 border-l-4 border-green-500' : 'bg-red-50 border-l-4 border-red-500'}">
-                        <p class="font-semibold text-sm">№${i+1}. ${ua.q}</p>
-                        <p class="text-sm mt-1">Сіздің жауабыңыз: <span class="${ua.selected === ua.correct ? 'text-green-600' : 'text-red-600'}">${ua.selected}</span></p>
-                        ${ua.selected !== ua.correct ? `<p class="text-sm text-green-700 font-medium">Дұрыс жауабы: ${ua.correct}</p>` : ''}
-                    </div>
-                `).join('')}
-            </div>
-            <button onclick="showView('dashboard-view')" class="w-full mt-6 bg-gray-800 text-white py-3 rounded-xl hover:bg-gray-700">Басты бетке қайту</button>
-        `;
-    }
-
-    window.showTeacherPanel = async () => {
-        showView('teacher-view');
-        const tableBody = document.getElementById('teacher-table-body');
-        tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4">Жүктелуде...</td></tr>';
-
-        const usersSnap = await getDocs(collection(db, 'artifacts', appId, 'users'));
-        let rows = "";
-        
-        for (const userDoc of usersSnap.docs) {
-            const userId = userDoc.id;
-            const profile = (await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'profile'))).data();
-            const olymp = (await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'olympiad'))).data();
-            const quiz = (await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'quiz_results'))).data();
-
-            if (profile?.role === 'student') {
-                rows += `
-                    <tr class="border-b">
-                        <td class="p-3">${profile.email}</td>
-                        <td class="p-3">
-                            ${olymp ? `
-                                <div class="text-xs">
-                                    <p>Статус: <span class="font-bold">${olymp.status}</span></p>
-                                    ${olymp.imageUrl ? `<a href="${olymp.imageUrl}" target="_blank" class="text-blue-500 underline">Суретті көру</a>` : 'Сурет жоқ'}
-                                </div>
-                            ` : 'Бастаған жоқ'}
-                        </td>
-                        <td class="p-3 font-bold">${quiz ? quiz.score + '/' + quiz.total : '0'}</td>
-                        <td class="p-3">
-                            <button onclick="viewEssay('${userId}')" class="text-blue-600 hover:underline">Эссені оқу</button>
-                        </td>
-                    </tr>
-                `;
-            }
-        }
-        tableBody.innerHTML = rows || '<tr><td colspan="4" class="text-center py-4">Оқушылар табылмады</td></tr>';
-    };
-
-    window.viewEssay = async (uid) => {
-        const snap = await getDoc(doc(db, 'artifacts', appId, 'users', uid, 'olympiad'));
-        if (snap.exists() && snap.data().essayText) {
-            alert("Эссе мәтіні:\n\n" + snap.data().essayText);
-        } else {
-            alert("Эссе жазылмаған");
-        }
-    }
-
-</script>
-
-
-<!-- Авторизация -->
-<div id="auth-section" class="flex-grow flex items-center justify-center p-4">
-    <div class="glass max-w-md w-full p-8 rounded-3xl shadow-2xl">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Bilim Portaly</h1>
-            <p class="text-gray-500">Оқу платформасына қош келдіңіз</p>
-        </div>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input id="email" type="email" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="example@mail.com">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
-                <input id="pass" type="password" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••">
-            </div>
-            <div class="grid grid-cols-2 gap-4 pt-4">
-                <button onclick="handleAuth('login')" class="bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition">Кіру</button>
-                <button onclick="handleAuth('reg')" class="bg-gray-100 text-gray-800 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">Тіркелу</button>
-            </div>
+        });
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="loader" class="hidden fixed inset-0 flex items-center justify-center bg-black/50 z-50 text-white text-xl">Орындалуда...</div>
+    
+    <div id="auth-section" class="flex items-center justify-center h-screen">
+        <div class="bg-white p-8 rounded-xl shadow-md w-96">
+            <h2 class="text-2xl font-bold mb-4">Білім Порталы</h2>
+            <input type="email" id="email" placeholder="Email" class="w-full p-2 border mb-2 rounded">
+            <input type="password" id="pass" placeholder="Пароль" class="w-full p-2 border mb-4 rounded">
+            <button onclick="handleAuth('login')" class="w-full bg-blue-600 text-white p-2 rounded mb-2 hover:bg-blue-700">Кіру</button>
+            <button onclick="handleAuth('reg')" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">Тіркелу</button>
         </div>
     </div>
-</div>
 
-<!-- Негізгі Контент -->
-<div id="main-section" class="hidden-section flex-grow flex flex-col">
-    <header class="glass sticky top-0 z-10 border-b p-4 flex justify-between items-center px-8 shadow-sm">
-        <div class="flex items-center gap-3">
-            <div class="bg-blue-600 p-2 rounded-lg text-white">
-                <i class="fas fa-graduation-cap"></i>
-            </div>
-            <span class="font-bold text-xl tracking-tight">Bilim Portaly</span>
-        </div>
-        <div class="flex items-center gap-4">
-            <button id="teacher-btn" onclick="showTeacherPanel()" class="hidden-section text-sm font-medium text-blue-600 hover:text-blue-700 px-3 py-1 border border-blue-600 rounded-full">
-                <i class="fas fa-chalkboard-teacher mr-1"></i> Мұғалім панели
-            </button>
-            <span id="user-email" class="text-sm text-gray-600 hidden sm:block"></span>
-            <button onclick="logout()" class="text-gray-400 hover:text-red-500"><i class="fas fa-sign-out-alt"></i></button>
-        </div>
-    </header>
-
-    <main class="p-4 md:p-8 flex-grow overflow-y-auto">
-        <!-- Dashboard -->
-        <div id="dashboard-view" class="view-section max-w-5xl mx-auto space-y-8">
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl">
-                <h2 class="text-3xl font-bold mb-2">Сәлем! Бүгін қандай жоспар?</h2>
-                <p class="text-blue-100 opacity-90">Олимпиада тапсырмаларын орындаңыз немесе тест арқылы біліміңізді тексеріңіз.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Олимпиада картасы -->
-                <div class="glass p-8 rounded-3xl border-2 border-transparent hover:border-blue-500 transition-all shadow-lg group cursor-pointer" onclick="startOlympiad()">
-                    <div class="w-14 h-14 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-6 text-2xl group-hover:scale-110 transition">
-                        <i class="fas fa-trophy"></i>
-                    </div>
-                    <h3 class="text-2xl font-bold mb-2">Олимпиада тапсырмасы</h3>
-                    <p class="text-gray-500 mb-6 leading-relaxed">Эссе жазу және суретті бекіту. Барлығына 2 сағат беріледі.</p>
-                    <div class="flex items-center text-blue-600 font-semibold">
-                        Бастау <i class="fas fa-arrow-right ml-2 group-hover:translate-x-2 transition"></i>
-                    </div>
-                </div>
-
-                <!-- Тест картасы -->
-                <div class="glass p-8 rounded-3xl border-2 border-transparent hover:border-green-500 transition-all shadow-lg group cursor-pointer" onclick="startQuiz()">
-                    <div class="w-14 h-14 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-6 text-2xl group-hover:scale-110 transition">
-                        <i class="fas fa-tasks"></i>
-                    </div>
-                    <h3 class="text-2xl font-bold mb-2">Тақырып бойынша тесттер</h3>
-                    <p class="text-gray-500 mb-6 leading-relaxed">Жалпы 40-тан астам сұрақ. Біліміңді сынап, қателеріңмен жұмыс жаса.</p>
-                    <div class="flex items-center text-green-600 font-semibold">
-                        Өту <i class="fas fa-arrow-right ml-2 group-hover:translate-x-2 transition"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Olympiad View -->
-        <div id="olympiad-view" class="view-section hidden-section max-w-4xl mx-auto">
-            <div class="glass p-8 rounded-3xl shadow-xl">
-                <div class="flex justify-between items-center mb-6 border-b pb-4">
-                    <h2 class="text-2xl font-bold">Олимпиада кезеңі</h2>
-                    <div class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full font-mono text-lg font-bold" id="olymp-timer">02:00:00</div>
-                </div>
-                
-                <div class="bg-blue-50 p-6 rounded-2xl mb-8">
-                    <h4 class="font-bold text-blue-800 mb-2 underline">Эссе тақырыбы:</h4>
-                    <p class="text-lg text-blue-900 font-medium">"Қазақстанда кеңес өкіметінің орнауы. Азамат соғысы кезеңі және Алаш қайраткерлерінің саяси бағыттары."</p>
-                </div>
-
-                <div class="space-y-6">
-                    <div>
-                        <label class="block font-semibold mb-2">Өз ойыңызды жазыңыз:</label>
-                        <textarea id="essay-text" class="w-full h-64 p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Мұнда жазыңыз..."></textarea>
-                    </div>
-                    <div>
-                        <label class="block font-semibold mb-2">Суретті бекіту (міндетті емес):</label>
-                        <input type="file" id="essay-file" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    </div>
-                    <div class="flex gap-4">
-                        <button onclick="submitOlympiad()" class="flex-grow bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 transition">Жіберу</button>
-                        <button onclick="showView('dashboard-view')" class="px-8 border rounded-2xl hover:bg-gray-50">Кейінге қалдыру</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quiz View -->
-        <div id="quiz-view" class="view-section hidden-section max-w-2xl mx-auto">
-            <div class="glass p-10 rounded-3xl shadow-xl" id="quiz-container">
-                <!-- Тест динамикалық түрде осы жерге шығады -->
-            </div>
-        </div>
-
-        <!-- Teacher View -->
-        <div id="teacher-view" class="view-section hidden-section max-w-6xl mx-auto">
-            <div class="glass p-8 rounded-3xl shadow-xl">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">Оқушылардың үлгерімі</h2>
-                    <button onclick="showView('dashboard-view')" class="text-gray-500"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-50 text-gray-600 text-sm">
-                                <th class="p-3 font-semibold">Оқушы Email</th>
-                                <th class="p-3 font-semibold">Олимпиада (Эссе/Сурет)</th>
-                                <th class="p-3 font-semibold">Тест ұпайы</th>
-                                <th class="p-3 font-semibold">Әрекет</th>
-                            </tr>
-                        </thead>
-                        <tbody id="teacher-table-body">
-                            <!-- Деректер осы жерге келеді -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </main>
-</div>
-
-<!-- Loader -->
-<div id="loader" class="hidden-section fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-    <div class="bg-white p-6 rounded-2xl flex items-center gap-4">
-        <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <span class="font-medium">Орындалуда...</span>
+    <div id="main-section" class="hidden p-8">
+        <h1 class="text-3xl font-bold">Қош келдіңіз!</h1>
+        <button onclick="firebase.auth().signOut()" class="bg-red-500 text-white px-4 py-2 mt-4 rounded">Шығу</button>
     </div>
-</div>
-
 </body>
 </html>
