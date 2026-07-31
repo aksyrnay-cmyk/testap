@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Білім Порталы</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase CDN -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -16,20 +15,22 @@
             projectId: "aslan-4bc5c",
             storageBucket: "aslan-4bc5c.firebasestorage.app",
             messagingSenderId: "655221985403",
-            appId: "1:655221985403:web:05aadfcbb48e5b19fb52de",
-            measurementId: "G-70E4K0E9EC"
+            appId: "1:655221985403:web:05aadfcbb48e5b19fb52de"
         };
+        
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
-        const db = firebase.firestore();
 
         window.handleAuth = async (type) => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('pass').value;
+            const email = document.getElementById('email').value.trim();
+            const pass = document.getElementById('pass').value.trim();
             const loader = document.getElementById('loader');
             
-            if (!email || !pass) { alert('Барлық жолдарды толтырыңыз'); return; }
+            if (!email || !pass) { alert('Email мен парольді толтырыңыз'); return; }
+            if (pass.length < 6) { alert('Пароль кемінде 6 таңба болуы керек'); return; }
+            
             loader.classList.remove('hidden');
+            loader.innerText = 'Орындалуда...';
             
             try {
                 if (type === 'reg') {
@@ -39,13 +40,13 @@
                     await auth.signInWithEmailAndPassword(email, pass);
                 }
             } catch (e) {
-                alert('Қате: ' + e.message);
                 loader.classList.add('hidden');
+                console.error(e);
+                alert('Қате орын алды: ' + e.message);
             }
         };
 
-        firebase.auth().onAuthStateChanged((user) => {
-            document.getElementById('loader').classList.add('hidden');
+        auth.onAuthStateChanged((user) => {
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('main-section').classList.remove('hidden');
@@ -53,25 +54,26 @@
                 document.getElementById('auth-section').classList.remove('hidden');
                 document.getElementById('main-section').classList.add('hidden');
             }
+            document.getElementById('loader').classList.add('hidden');
         });
     </script>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div id="loader" class="hidden fixed inset-0 flex items-center justify-center bg-black/50 z-50 text-white text-xl">Орындалуда...</div>
+<body class="bg-gray-100">
+    <div id="loader" class="hidden fixed inset-0 flex items-center justify-center bg-black/50 z-50 text-white text-xl font-bold">Орындалуда...</div>
     
     <div id="auth-section" class="flex items-center justify-center h-screen">
         <div class="bg-white p-8 rounded-xl shadow-md w-96">
             <h2 class="text-2xl font-bold mb-4">Білім Порталы</h2>
             <input type="email" id="email" placeholder="Email" class="w-full p-2 border mb-2 rounded">
-            <input type="password" id="pass" placeholder="Пароль" class="w-full p-2 border mb-4 rounded">
-            <button onclick="handleAuth('login')" class="w-full bg-blue-600 text-white p-2 rounded mb-2 hover:bg-blue-700">Кіру</button>
-            <button onclick="handleAuth('reg')" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">Тіркелу</button>
+            <input type="password" id="pass" placeholder="Пароль (6+ таңба)" class="w-full p-2 border mb-4 rounded">
+            <button onclick="handleAuth('login')" class="w-full bg-blue-600 text-white p-2 rounded mb-2 hover:bg-blue-700 transition">Кіру</button>
+            <button onclick="handleAuth('reg')" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 transition">Тіркелу</button>
         </div>
     </div>
 
     <div id="main-section" class="hidden p-8">
         <h1 class="text-3xl font-bold">Қош келдіңіз!</h1>
-        <button onclick="firebase.auth().signOut()" class="bg-red-500 text-white px-4 py-2 mt-4 rounded">Шығу</button>
+        <button onclick="auth.signOut()" class="bg-red-500 text-white px-4 py-2 mt-4 rounded hover:bg-red-600">Шығу</button>
     </div>
 </body>
 </html>
