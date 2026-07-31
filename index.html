@@ -1,79 +1,675 @@
 <!DOCTYPE html>
 <html lang="kk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Білім Порталы - Олимпиада</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDhGrRS_J1c3uQf-SUlsG2QuSjHRnwlPCU",
-            authDomain: "aslan-4bc5c.firebaseapp.com",
-            projectId: "aslan-4bc5c",
-            storageBucket: "aslan-4bc5c.firebasestorage.app",
-            messagingSenderId: "655221985403",
-            appId: "1:655221985403:web:05aadfcbb48e5b19fb52de"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
-        const quizData = [
-            { q: "Қазақстанның астанасы қай қала?", a: "Астана" },
-            { q: "Пи саны нешеге тең?", a: "3.14" },
-            { q: "Судың химиялық формуласы қандай?", a: "H2O" }
-        ];
-
-        window.handleAuth = async (type) => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('pass').value;
-            if (!email || !pass) return alert('Деректерді толтырыңыз');
-            
-            try {
-                if (type === 'reg') await auth.createUserWithEmailAndPassword(email, pass);
-                else await auth.signInWithEmailAndPassword(email, pass);
-            } catch (e) { alert('Қате: ' + e.message); }
-        };
-
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('main-section').classList.remove('hidden');
-                renderQuiz();
-            } else {
-                document.getElementById('auth-section').classList.remove('hidden');
-                document.getElementById('main-section').classList.add('hidden');
-            }
-        });
-
-        function renderQuiz() {
-            const container = document.getElementById('quiz-container');
-            container.innerHTML = quizData.map((item, i) => `
-                <div class="mb-6 p-4 bg-gray-50 rounded-lg shadow">
-                    <p class="font-bold text-lg">${i+1}. ${item.q}</p>
-                    <input type="text" class="w-full mt-2 p-2 border rounded" placeholder="Жауабыңыз...">
-                </div>
-            `).join('');
-        }
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Білім Порталы — Тарих Олимпиадасы</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Inter:wght@400;500;600;700&family=Spectral:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1B2A4A;
+    --navy-deep:#101a30;
+    --gold:#C9A227;
+    --gold-soft:#e8d9a3;
+    --cream:#FBF8F1;
+    --paper:#F3EEE2;
+    --ink:#232323;
+    --red:#8C3B2E;
+    --green:#3E6B4F;
+    --line:#DCD3BC;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif;}
+  h1,h2,h3,.display{font-family:'Marcellus',serif;letter-spacing:.01em;}
+  .eyebrow{font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:600;color:var(--gold);}
+  .card{background:#fff;border:1px solid var(--line);border-radius:6px;}
+  .btn{font-family:'Inter',sans-serif;font-weight:600;border-radius:4px;padding:10px 20px;cursor:pointer;border:1px solid transparent;transition:.15s;font-size:14px;letter-spacing:.01em;}
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{background:var(--navy-deep);}
+  .btn-gold{background:var(--gold);color:var(--navy-deep);}
+  .btn-gold:hover{filter:brightness(0.95);}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--navy);}
+  .btn-ghost:hover{background:var(--paper);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  input[type=text],input[type=password],input[type=email],textarea{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:4px;font-family:'Inter',sans-serif;font-size:14px;background:#fff;color:var(--ink);
+  }
+  input:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:1px;border-color:var(--gold);}
+  .tab{padding:10px 4px;font-family:'Inter',sans-serif;font-weight:600;font-size:13px;letter-spacing:.03em;color:#8a8577;cursor:pointer;border-bottom:2px solid transparent;text-transform:uppercase;}
+  .tab.active{color:var(--navy);border-bottom-color:var(--gold);}
+  .badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;letter-spacing:.03em;}
+  .badge-wait{background:#eee;color:#777;}
+  .badge-progress{background:#fdf1cf;color:#8a6d1a;}
+  .badge-done{background:#e3efe6;color:var(--green);}
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+  .num{font-family:'Spectral',serif;font-weight:600;color:var(--gold);}
+  .fade-in{animation:fadeIn .35s ease both;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  @media (prefers-reduced-motion: reduce){.fade-in{animation:none;}}
+  .timer{font-family:'Spectral',serif;font-weight:600;font-size:22px;letter-spacing:.02em;}
+  .timer.low{color:var(--red);}
+  .qa-row{border-bottom:1px solid var(--line);}
+  .qa-row:last-child{border-bottom:none;}
+</style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div id="auth-section" class="flex items-center justify-center h-screen">
-        <div class="bg-white p-8 rounded-xl shadow-md w-96">
-            <h2 class="text-2xl font-bold mb-4">Білім Порталы</h2>
-            <input type="email" id="email" placeholder="Email" class="w-full p-2 border mb-2 rounded">
-            <input type="password" id="pass" placeholder="Пароль" class="w-full p-2 border mb-4 rounded">
-            <button onclick="handleAuth('login')" class="w-full bg-blue-600 text-white p-2 rounded mb-2">Кіру</button>
-            <button onclick="handleAuth('reg')" class="w-full bg-green-600 text-white p-2 rounded">Тіркелу</button>
-        </div>
-    </div>
+<body>
 
-    <div id="main-section" class="hidden p-8 max-w-2xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6">Олимпиада тапсырмалары</h1>
-        <div id="quiz-container"></div>
-        <button onclick="auth.signOut()" class="bg-red-500 text-white px-6 py-2 rounded mt-4">Шығу</button>
+<div id="app" class="min-h-screen"></div>
+
+<script>
+/* ============================= ДЕРЕКТЕР ЖИЫНЫ ============================= */
+
+const norm = s => (s||'').toString().toLowerCase()
+  .replace(/[«»"'.,!?;:()]/g,'')
+  .replace(/ә/g,'а').replace(/і/g,'и').replace(/ң/g,'н').replace(/ғ/g,'г')
+  .replace(/ү/g,'у').replace(/ұ/g,'у').replace(/қ/g,'к').replace(/ө/g,'о').replace(/һ/g,'х')
+  .replace(/\s+/g,' ').trim();
+
+const answerMatches = (given, correct) => {
+  const g = norm(given), c = norm(correct);
+  if(!g) return false;
+  if(g===c) return true;
+  // allow matching on the significant word for short-answer proper nouns
+  if(c.length>3 && (g.includes(c) || c.includes(g))) return true;
+  return false;
+};
+
+const OLYMPIAD_ESSAY = {
+  title: "Қазақстанда Кеңес өкіметінің орнауы",
+  guidelines: [
+    "Үш жүз социалистік партиясы мен Алаш партиясының саяси бағыттарын салыстырыңыз.",
+    "«Үш жүз» партиясының тарихына тоқталыңыз.",
+    "Азамат соғысы кезіндегі Қазақстандағы жағдайды сипаттаңыз.",
+    "Қазақстандағы әскери қимылдарды талдаңыз.",
+    "Тұжырым — оқиғалардың нәтижесі мен тарихи маңызын қорытыңыз."
+  ],
+  durationMin: 120
+};
+
+const OLYMPIAD_TEST = [
+  {q:"XX ғ. басында қазақ халқын біріктіру мен болашақта мемлекеттілік дәстүрін қалпына келтіруді көздеген күшті ұлт-азаттық қозғалыс қалай аталды?", a:"Алаш"},
+  {q:"«Алаш» партиясының төрағасы кім болды?", a:"Ә.Бөкейханов"},
+  {q:"«Қазақ» газетінің бас редакторы болып қызмет атқарған алаш зиялысы кім?", a:"Ахмет Байтұрсынов"},
+  {q:"1913 жылдан бастап жалпыұлттық «Қазақ» газеті шығарыла бастаған қала қайсы?", a:"Орынбор"},
+  {q:"«Алаш» партиясының бағдарламасы қанша бөлімнен тұрды?", a:"10 бөлімнен"},
+  {q:"1917 ж. 21–26 шілде аралығында Бірінші Жалпықазақ съезінде қандай мәселе қарастырылды?", a:"Қазақтың Алаш саяси партиясын құру"},
+  {q:"Азамат соғысының басталуын білдірген оқиға қандай болды?", a:"Чехословак корпусының бүлігі"},
+  {q:"Омбыдағы Уақытша Сібірлік үкіметті басқарған адмиралдың есімі кім?", a:"Колчак"},
+  {q:"1920 ж. наурызда жойылған Қазақстандағы Азамат соғысының соңғы шайқасы қалай аталды?", a:"Солтүстік Жетісу майданы"},
+  {q:"1917 ж. қарашада «Үш жүз» партиясын кім құрды (қалады)?", a:"М.Әйтпенов"}
+];
+
+const TOPICS = [
+  {
+    id: "alash",
+    title: "§6–7. Алаш қозғалысы және қазақтың ұлттық идеясы",
+    questions: [
+      {q:"Ахмет Байтұрсынов пен Мағжан Жұмабаев кімдер болды?", a:"Алаш партиясының қайраткерлері"},
+      {q:"Қазақ жауынгерлерінің жауға шапқандағы жалпыұлттық ұраны қандай болды?", a:"Алаш"},
+      {q:"«Қазақ» сөзінің баламасы қандай сөз?", a:"Алаш"},
+      {q:"1905 ж. желтоқсанда Орал қаласында бес облыстан қазақ депутаттарының съезінің нәтижесі қандай болды?", a:"кадет партиясының қазақ филиалын құру әрекеті жасалды"},
+      {q:"1906 ж. ақпанда кадеттерге жақын бағдарлама қабылдаған II Қазақ съезі қай қалада өтті?", a:"Семей"},
+      {q:"«Алаш» партиясының арнайы баспасөз органы қандай газет болды?", a:"Қазақ"},
+      {q:"Сөз және баспасөз бостандығын жариялаған патша манифесі қай жылы шықты?", a:"1905"},
+      {q:"1907 ж. Санкт-Петербургте шыққан алғашқы ұлттық қоғамдық-саяси газет қалай аталды?", a:"Серке"},
+      {q:"Жалпыұлттық «Қазақ» газетінің негізін кім қалады?", a:"А.Байтұрсынұлы"},
+      {q:"1917 ж. шілдеде Орынборда болған Жалпықазақ съезінде Алаш партиясы қандай талап қойды?", a:"Қазақтардың ұлттық автономия алуы"},
+      {q:"1917 ж. жазында (21–26 шілде) Орынборда өткен Бірінші жалпықазақ съезінің қорытындысы қандай болды?", a:"ұлттық саяси Алаш партиясы құрылды"},
+      {q:"«Алаш» партиясының негізгі мақсаты қандай еді?", a:"қазақ автономиясын құру"},
+      {q:"«Алаш» партиясы қашан құрылды?", a:"1917 ж. шілде"},
+      {q:"Қырғыз (Қазақ) АКСР-і қашан құрылды?", a:"1920"},
+      {q:"РКФСР БОАК Алашордаға қашан кешірім жариялады?", a:"1919 ж. наурыз"}
+    ]
+  },
+  {
+    id: "war",
+    title: "§10–11. Қазақстан азаматтық қарсыластық жылдарында",
+    questions: [
+      {q:"Қарулы төңкеріс жасалып, Әскери-революциялық комитет Уақытша үкіметтің құлатылғанын қашан жариялады?", a:"1917 ж. 25 қазанда"},
+      {q:"Қазан революциясы нәтижесінде билікке келген Халық Комиссарлары Кеңесін кім басқарды?", a:"В.И.Ленин"},
+      {q:"Кеңестердің II Бүкілресейлік съезінде қандай декрет қабылданды (соғысқа қатысты)?", a:"Бітім туралы Декрет"},
+      {q:"1918 ж. тамызда бірінші Алаш атты әскер полкі қай қалада ұйымдастырылды?", a:"Семей"},
+      {q:"1917 ж. қарашада «Үш жүз» партиясын кім құрды?", a:"М.Әйтпенов"},
+      {q:"Қазақстан аумағы ақ гвардияшылардан қашан түгелге жуық азат етілді?", a:"1919 жылдың басында"},
+      {q:"1920 ж. наурызда жойылған Қазақстандағы Азамат соғысының соңғы шайқасы қалай аталды?", a:"Солтүстік Жетісу майданы"},
+      {q:"Кеңестердің II Бүкілресейлік съезінде жер туралы қандай декрет қабылданды?", a:"Жер туралы Декрет"},
+      {q:"«Ресей мен Шығыстың барлық еңбекші мұсылмандарына үндеуді» қандай үкімет қабылдады?", a:"большевиктер"},
+      {q:"Қазақстанда Кеңес өкіметін орнату мен нығайту жұмысына қай партия белсене қатысты?", a:"Үш жүз партиясы"},
+      {q:"1918 ж. 25 мамырда Антанта елдері нұсқауымен бүлік шығарған кім?", a:"чехословак корпусы"},
+      {q:"Азамат соғысы барысында Тарбағатай мен Алтайда әрекет еткен партизандық отряд қалай аталды?", a:"Тау қырандары"},
+      {q:"Омбыдағы Уақытша Сібірлік үкіметті кім басқарды?", a:"Колчак"},
+      {q:"Азамат соғысының басталуын білдірген оқиға қандай болды?", a:"Чехословак корпусының бүлігі"},
+      {q:"Кеңес өкіметіне қарсы қолдарына қару алған Орал және Орынбор казактарын кім бастады?", a:"А.И.Дутов"}
+    ]
+  }
+];
+
+/* ============================= ЖАДЫ (STORAGE) КӨМЕКШІЛЕРІ ============================= */
+
+async function sGet(key, shared=true){
+  try{ const r = await window.storage.get(key, shared); return r ? JSON.parse(r.value) : null; }
+  catch(e){ return null; }
+}
+async function sSet(key, value, shared=true){
+  try{ await window.storage.set(key, JSON.stringify(value), shared); return true; }
+  catch(e){ console.error('storage set error', e); return false; }
+}
+async function sListKeys(prefix, shared=true){
+  try{ const r = await window.storage.list(prefix, shared); return r ? r.keys : []; }
+  catch(e){ return []; }
+}
+
+async function ensureSeed(){
+  let users = await sGet('users');
+  if(!users){
+    users = [{username:'mugalim', password:'ustaz2026', role:'teacher', name:'Мұғалім'}];
+    await sSet('users', users);
+  }
+  return users;
+}
+
+/* ============================= ЖАЛПЫ КҮЙ ============================= */
+
+let STATE = {
+  user: null,     // {username, role, name}
+  users: [],
+  view: 'auth',   // auth | student | teacher
+  studentTab: 'olymp', // olymp | topics
+  activeTopic: null,
+  timerHandle: null
+};
+
+const root = document.getElementById('app');
+
+function fmtTime(ms){
+  if(ms<0) ms=0;
+  const totalSec = Math.floor(ms/1000);
+  const h = String(Math.floor(totalSec/3600)).padStart(2,'0');
+  const m = String(Math.floor((totalSec%3600)/60)).padStart(2,'0');
+  const s = String(totalSec%60).padStart(2,'0');
+  return `${h}:${m}:${s}`;
+}
+
+/* ============================= РЕНДЕР: АУТЕНТИФИКАЦИЯ ============================= */
+
+function renderAuth(){
+  root.innerHTML = `
+  <div class="min-h-screen flex items-center justify-center px-4" style="background:radial-gradient(1200px 600px at 80% -10%, #eadfba33, transparent), var(--cream);">
+    <div class="w-full max-w-md fade-in">
+      <div class="text-center mb-8">
+        <div class="eyebrow mb-2">Тарих • Ғылыми Олимпиада</div>
+        <h1 class="display text-4xl" style="color:var(--navy)">Білім Порталы</h1>
+        <p class="text-sm mt-2" style="color:#7a7563">Қазақстан тарихы бойынша тест және олимпиада жүйесі</p>
+      </div>
+      <div class="card p-6 shadow-sm">
+        <div class="flex gap-6 mb-5 border-b" style="border-color:var(--line)">
+          <div id="tab-login" class="tab active">Кіру</div>
+          <div id="tab-reg" class="tab">Тіркелу (оқушы)</div>
+        </div>
+        <div id="auth-error" class="hidden text-sm mb-3 p-2 rounded" style="background:#fbeae7;color:var(--red)"></div>
+        <div id="form-login">
+          <label class="text-xs font-semibold" style="color:#7a7563">Логин</label>
+          <input type="text" id="li-user" class="mb-3 mt-1" placeholder="Логиныңыз">
+          <label class="text-xs font-semibold" style="color:#7a7563">Құпия сөз</label>
+          <input type="password" id="li-pass" class="mb-4 mt-1" placeholder="••••••••">
+          <button id="btn-login" class="btn btn-primary w-full">Жүйеге кіру</button>
+          <p class="text-xs mt-4" style="color:#a19c8a">Мұғалім ретінде кіру: <b>mugalim</b> / <b>ustaz2026</b></p>
+        </div>
+        <div id="form-reg" class="hidden">
+          <label class="text-xs font-semibold" style="color:#7a7563">Аты-жөні</label>
+          <input type="text" id="rg-name" class="mb-3 mt-1" placeholder="Аты-жөніңіз">
+          <label class="text-xs font-semibold" style="color:#7a7563">Логин</label>
+          <input type="text" id="rg-user" class="mb-3 mt-1" placeholder="Логин ойлап табыңыз">
+          <label class="text-xs font-semibold" style="color:#7a7563">Құпия сөз</label>
+          <input type="password" id="rg-pass" class="mb-4 mt-1" placeholder="••••••••">
+          <button id="btn-reg" class="btn btn-gold w-full">Тіркелу</button>
+        </div>
+      </div>
     </div>
+  </div>`;
+
+  document.getElementById('tab-login').onclick = ()=>{
+    document.getElementById('tab-login').classList.add('active');
+    document.getElementById('tab-reg').classList.remove('active');
+    document.getElementById('form-login').classList.remove('hidden');
+    document.getElementById('form-reg').classList.add('hidden');
+  };
+  document.getElementById('tab-reg').onclick = ()=>{
+    document.getElementById('tab-reg').classList.add('active');
+    document.getElementById('tab-login').classList.remove('active');
+    document.getElementById('form-reg').classList.remove('hidden');
+    document.getElementById('form-login').classList.add('hidden');
+  };
+
+  document.getElementById('btn-login').onclick = async ()=>{
+    const u = document.getElementById('li-user').value.trim();
+    const p = document.getElementById('li-pass').value;
+    const err = document.getElementById('auth-error');
+    if(!u||!p){ err.textContent='Логин мен құпия сөзді толтырыңыз.'; err.classList.remove('hidden'); return; }
+    const users = await ensureSeed();
+    const found = users.find(x=>x.username===u && x.password===p);
+    if(!found){ err.textContent='Логин немесе құпия сөз қате.'; err.classList.remove('hidden'); return; }
+    STATE.user = found; STATE.users = users;
+    STATE.view = found.role==='teacher' ? 'teacher' : 'student';
+    render();
+  };
+
+  document.getElementById('btn-reg').onclick = async ()=>{
+    const name = document.getElementById('rg-name').value.trim();
+    const u = document.getElementById('rg-user').value.trim();
+    const p = document.getElementById('rg-pass').value;
+    const err = document.getElementById('auth-error');
+    if(!name||!u||!p){ err.textContent='Барлық өрісті толтырыңыз.'; err.classList.remove('hidden'); return; }
+    const users = await ensureSeed();
+    if(users.find(x=>x.username===u)){ err.textContent='Бұл логин бос емес, басқасын таңдаңыз.'; err.classList.remove('hidden'); return; }
+    const newUser = {username:u, password:p, role:'student', name};
+    users.push(newUser);
+    await sSet('users', users);
+    await sSet('progress:'+u, {stage:'not_started', essay:null, test:null, topicScores:{}});
+    STATE.user = newUser; STATE.users = users; STATE.view='student';
+    render();
+  };
+}
+
+/* ============================= ЖАЛПЫ ШАПКА ============================= */
+
+function headerBar(activeTab){
+  return `
+  <div class="border-b" style="border-color:var(--line);background:#fff;">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div>
+        <div class="eyebrow">Білім Порталы</div>
+        <div class="display text-xl" style="color:var(--navy)">${STATE.user.role==='teacher'?'Мұғалім кабинеті':'Оқушы кабинеті'}</div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="text-sm" style="color:#7a7563">${STATE.user.name}</span>
+        <button id="btn-logout" class="btn btn-ghost">Шығу</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================= ОҚУШЫ ЭКРАНЫ ============================= */
+
+async function renderStudent(){
+  const progress = await sGet('progress:'+STATE.user.username) || {stage:'not_started', essay:null, test:null, topicScores:{}};
+
+  root.innerHTML = `
+    ${headerBar()}
+    <div class="max-w-5xl mx-auto px-6 py-6">
+      <div class="flex gap-8 mb-6 border-b" style="border-color:var(--line)">
+        <div id="tab-olymp" class="tab ${STATE.studentTab==='olymp'?'active':''}">Олимпиада тапсырмасы</div>
+        <div id="tab-topics" class="tab ${STATE.studentTab==='topics'?'active':''}">Тақырып бойынша тесттер</div>
+      </div>
+      <div id="student-content" class="fade-in"></div>
+    </div>
+  `;
+  document.getElementById('btn-logout').onclick = logout;
+  document.getElementById('tab-olymp').onclick = ()=>{ STATE.studentTab='olymp'; renderStudent(); };
+  document.getElementById('tab-topics').onclick = ()=>{ STATE.studentTab='topics'; STATE.activeTopic=null; renderStudent(); };
+
+  if(STATE.studentTab==='olymp'){
+    renderOlympiad(progress);
+  } else {
+    renderTopics(progress);
+  }
+}
+
+function stageBadge(stage){
+  if(stage==='completed') return `<span class="badge badge-done">Аяқталды</span>`;
+  if(stage==='not_started') return `<span class="badge badge-wait">Басталмаған</span>`;
+  return `<span class="badge badge-progress">Орындалуда</span>`;
+}
+
+/* ---- Олимпиада тапсырмасы ---- */
+
+function renderOlympiad(progress){
+  const el = document.getElementById('student-content');
+  const stage = progress.stage || 'not_started';
+
+  if(stage==='not_started'){
+    el.innerHTML = `
+      <div class="card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="display text-2xl" style="color:var(--navy)">Олимпиада тапсырмасы</h2>
+          ${stageBadge(stage)}
+        </div>
+        <p class="text-sm mb-3" style="color:#544f40">Тапсырма 2 бөліктен тұрады: алдымен <b>эссе</b> жазып тапсырасыз (${OLYMPIAD_ESSAY.durationMin/60} сағат уақыт беріледі), содан кейін <b>10 сұрақтан</b> тұратын тест тапсырасыз.</p>
+        <div class="p-4 rounded mb-4" style="background:var(--paper)">
+          <div class="eyebrow mb-1">Эссе тақырыбы</div>
+          <div class="display text-lg mb-2" style="color:var(--navy)">${OLYMPIAD_ESSAY.title}</div>
+          <ul class="text-sm space-y-1" style="color:#544f40">
+            ${OLYMPIAD_ESSAY.guidelines.map(g=>`<li>— ${g}</li>`).join('')}
+          </ul>
+        </div>
+        <button id="btn-start-olymp" class="btn btn-primary">Тапсырманы бастау</button>
+      </div>`;
+    document.getElementById('btn-start-olymp').onclick = async ()=>{
+      progress.stage='essay';
+      progress.essayStartedAt = Date.now();
+      await sSet('progress:'+STATE.user.username, progress);
+      renderOlympiad(progress);
+    };
+    return;
+  }
+
+  if(stage==='essay'){
+    renderEssayStage(progress);
+    return;
+  }
+
+  if(stage==='test'){
+    renderOlympiadTestStage(progress);
+    return;
+  }
+
+  if(stage==='completed'){
+    renderOlympiadResults(progress);
+    return;
+  }
+}
+
+function renderEssayStage(progress){
+  const el = document.getElementById('student-content');
+  const deadline = progress.essayStartedAt + OLYMPIAD_ESSAY.durationMin*60*1000;
+
+  el.innerHTML = `
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="display text-2xl" style="color:var(--navy)">Эссе: ${OLYMPIAD_ESSAY.title}</h2>
+        <div class="timer" id="essay-timer">--:--:--</div>
+      </div>
+      <ul class="text-sm mb-3 space-y-1" style="color:#544f40">
+        ${OLYMPIAD_ESSAY.guidelines.map(g=>`<li>— ${g}</li>`).join('')}
+      </ul>
+      <textarea id="essay-text" rows="12" placeholder="Эссеңізді осында жазыңыз...">${progress.essayDraft||''}</textarea>
+      <div class="mt-3">
+        <label class="text-xs font-semibold" style="color:#7a7563">Қосымша сурет тіркеу (міндетті емес)</label><br>
+        <input type="file" id="essay-file" accept="image/*" class="mt-1 text-sm">
+        <div id="file-preview" class="mt-2"></div>
+      </div>
+      <div class="flex items-center gap-3 mt-5">
+        <button id="btn-submit-essay" class="btn btn-primary">Эссені тапсыру</button>
+        <span class="text-xs" style="color:#a19c8a">Уақыт аяқталса, эссе автоматты түрде тапсырылады.</span>
+      </div>
+    </div>`;
+
+  let attachedImage = progress.essay?.image || null;
+  const preview = document.getElementById('file-preview');
+  if(attachedImage){
+    preview.innerHTML = `<img src="${attachedImage}" style="max-height:120px;border:1px solid var(--line);border-radius:4px">`;
+  }
+
+  document.getElementById('essay-file').onchange = (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    if(file.size > 4*1024*1024){ alert('Сурет тым үлкен (4МБ дейін болу керек).'); return; }
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      attachedImage = reader.result;
+      preview.innerHTML = `<img src="${attachedImage}" style="max-height:120px;border:1px solid var(--line);border-radius:4px">`;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // autosave draft periodically
+  const textarea = document.getElementById('essay-text');
+  textarea.oninput = async ()=>{
+    progress.essayDraft = textarea.value;
+    await sSet('progress:'+STATE.user.username, progress);
+  };
+
+  async function doSubmit(auto){
+    clearInterval(STATE.timerHandle);
+    progress.essay = { text: textarea.value, image: attachedImage, submittedAt: Date.now(), auto: !!auto };
+    progress.essayDraft = null;
+    progress.stage = 'test';
+    await sSet('progress:'+STATE.user.username, progress);
+    renderOlympiad(progress);
+  }
+
+  document.getElementById('btn-submit-essay').onclick = ()=>doSubmit(false);
+
+  function tick(){
+    const remain = deadline - Date.now();
+    const t = document.getElementById('essay-timer');
+    if(!t) return;
+    t.textContent = fmtTime(remain);
+    if(remain < 10*60*1000) t.classList.add('low');
+    if(remain<=0){ doSubmit(true); }
+  }
+  tick();
+  STATE.timerHandle = setInterval(tick, 1000);
+}
+
+function renderOlympiadTestStage(progress){
+  const el = document.getElementById('student-content');
+  el.innerHTML = `
+    <div class="card p-6">
+      <h2 class="display text-2xl mb-1" style="color:var(--navy)">Олимпиада тест тапсырмасы</h2>
+      <p class="text-sm mb-4" style="color:#7a7563">10 сұрақ. Жауабыңызды қысқаша жазыңыз.</p>
+      <div id="olymp-q-list">
+        ${OLYMPIAD_TEST.map((item,i)=>`
+          <div class="qa-row py-3">
+            <div class="text-sm mb-2"><span class="num">${i+1}.</span> ${item.q}</div>
+            <input type="text" data-idx="${i}" class="olymp-answer" placeholder="Жауабыңыз...">
+          </div>
+        `).join('')}
+      </div>
+      <button id="btn-finish-olymp" class="btn btn-primary mt-4">Тестті аяқтау</button>
+    </div>`;
+
+  document.getElementById('btn-finish-olymp').onclick = async ()=>{
+    const inputs = document.querySelectorAll('.olymp-answer');
+    const answers = [];
+    let score = 0;
+    inputs.forEach(inp=>{
+      const idx = +inp.dataset.idx;
+      const given = inp.value;
+      const ok = answerMatches(given, OLYMPIAD_TEST[idx].a);
+      if(ok) score++;
+      answers.push({given, correct: OLYMPIAD_TEST[idx].a, ok});
+    });
+    progress.test = { answers, score, total: OLYMPIAD_TEST.length, completedAt: Date.now() };
+    progress.stage = 'completed';
+    await sSet('progress:'+STATE.user.username, progress);
+    renderOlympiad(progress);
+  };
+}
+
+function renderOlympiadResults(progress){
+  const el = document.getElementById('student-content');
+  const t = progress.test;
+  el.innerHTML = `
+    <div class="card p-6 mb-5">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="display text-2xl" style="color:var(--navy)">Нәтиже</h2>
+        ${stageBadge('completed')}
+      </div>
+      <div class="text-sm mb-4" style="color:#544f40">Тест бойынша ұпай: <b>${t.score} / ${t.total}</b></div>
+      <div>
+        ${t.answers.map((a,i)=>`
+          <div class="qa-row py-2">
+            <div class="text-sm mb-1"><span class="num">${i+1}.</span> ${OLYMPIAD_TEST[i].q}</div>
+            <div class="text-sm">Сіздің жауабыңыз: <span style="color:${a.ok?'var(--green)':'var(--red)'}">${a.given||'—'}</span> ${a.ok?'✓':'✗'}</div>
+            ${!a.ok?`<div class="text-sm" style="color:#7a7563">Дұрыс жауап: <b>${a.correct}</b></div>`:''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div class="card p-6">
+      <div class="eyebrow mb-1">Тапсырылған эссе</div>
+      <div class="display text-lg mb-2" style="color:var(--navy)">${OLYMPIAD_ESSAY.title}</div>
+      <p class="text-sm whitespace-pre-wrap" style="color:#3a3626">${(progress.essay?.text||'').slice(0,3000)}</p>
+      ${progress.essay?.image?`<img src="${progress.essay.image}" style="max-height:160px;border:1px solid var(--line);border-radius:4px;margin-top:10px">`:''}
+    </div>
+    <p class="text-xs mt-3" style="color:#a19c8a">Келесі кезең қолжетімді болғанда, мұғалім жариялайды. Прогресіңіз сақталды — қайта кіргенде осы нәтижелерді көресіз.</p>
+  `;
+}
+
+/* ---- Тақырып бойынша тесттер ---- */
+
+function renderTopics(progress){
+  const el = document.getElementById('student-content');
+  if(!STATE.activeTopic){
+    el.innerHTML = `
+      <div class="grid gap-4">
+        ${TOPICS.map(topic=>{
+          const sc = progress.topicScores?.[topic.id];
+          return `
+          <div class="card p-5 flex items-center justify-between">
+            <div>
+              <div class="display text-lg" style="color:var(--navy)">${topic.title}</div>
+              <div class="text-xs mt-1" style="color:#a19c8a">${topic.questions.length} сұрақ ${sc?`• соңғы нәтиже: ${sc.score}/${sc.total}`:''}</div>
+            </div>
+            <button data-topic="${topic.id}" class="btn btn-ghost open-topic">Бастау</button>
+          </div>`;
+        }).join('')}
+      </div>`;
+    document.querySelectorAll('.open-topic').forEach(btn=>{
+      btn.onclick = ()=>{ STATE.activeTopic = btn.dataset.topic; renderStudent(); };
+    });
+    return;
+  }
+
+  const topic = TOPICS.find(t=>t.id===STATE.activeTopic);
+  el.innerHTML = `
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="display text-2xl" style="color:var(--navy)">${topic.title}</h2>
+        <button id="btn-back-topics" class="btn btn-ghost">← Тізімге оралу</button>
+      </div>
+      <div id="topic-body" class="mt-4"></div>
+    </div>`;
+  document.getElementById('btn-back-topics').onclick = ()=>{ STATE.activeTopic=null; renderStudent(); };
+
+  const body = document.getElementById('topic-body');
+  body.innerHTML = `
+    ${topic.questions.map((item,i)=>`
+      <div class="qa-row py-3">
+        <div class="text-sm mb-2"><span class="num">${i+1}.</span> ${item.q}</div>
+        <input type="text" data-idx="${i}" class="topic-answer" placeholder="Жауабыңыз...">
+      </div>
+    `).join('')}
+    <button id="btn-finish-topic" class="btn btn-primary mt-3">Тексеру</button>
+    <div id="topic-result" class="mt-4"></div>
+  `;
+  document.getElementById('btn-finish-topic').onclick = async ()=>{
+    const inputs = document.querySelectorAll('.topic-answer');
+    let score = 0;
+    const rows = [];
+    inputs.forEach(inp=>{
+      const idx = +inp.dataset.idx;
+      const ok = answerMatches(inp.value, topic.questions[idx].a);
+      if(ok) score++;
+      rows.push({q:topic.questions[idx].q, given:inp.value, correct:topic.questions[idx].a, ok});
+    });
+    progress.topicScores = progress.topicScores || {};
+    progress.topicScores[topic.id] = {score, total: topic.questions.length, completedAt: Date.now()};
+    await sSet('progress:'+STATE.user.username, progress);
+
+    document.getElementById('topic-result').innerHTML = `
+      <div class="p-3 rounded mb-3" style="background:var(--paper)">Ұпай: <b>${score} / ${topic.questions.length}</b></div>
+      ${rows.map((r,i)=>`
+        <div class="qa-row py-2 text-sm">
+          <div>${i+1}. ${r.q}</div>
+          <div>Жауабыңыз: <span style="color:${r.ok?'var(--green)':'var(--red)'}">${r.given||'—'}</span> ${r.ok?'✓':'✗'}</div>
+          ${!r.ok?`<div style="color:#7a7563">Дұрыс жауап: <b>${r.correct}</b></div>`:''}
+        </div>`).join('')}
+    `;
+  };
+}
+
+/* ============================= МҰҒАЛІМ ЭКРАНЫ ============================= */
+
+async function renderTeacher(){
+  const users = await ensureSeed();
+  const students = users.filter(u=>u.role==='student');
+  const progressKeys = await sListKeys('progress:', true);
+
+  root.innerHTML = `
+    ${headerBar()}
+    <div class="max-w-5xl mx-auto px-6 py-6">
+      <h2 class="display text-2xl mb-4" style="color:var(--navy)">Оқушылар прогресі</h2>
+      <div id="teacher-list" class="grid gap-4"></div>
+    </div>
+  `;
+  document.getElementById('btn-logout').onclick = logout;
+  const list = document.getElementById('teacher-list');
+
+  if(students.length===0){
+    list.innerHTML = `<div class="card p-6 text-sm" style="color:#7a7563">Әзірге тіркелген оқушы жоқ.</div>`;
+    return;
+  }
+
+  for(const s of students){
+    const key = 'progress:'+s.username;
+    const p = progressKeys.includes(key) ? await sGet(key) : null;
+    const stage = p?.stage || 'not_started';
+    const testScore = p?.test ? `${p.test.score}/${p.test.total}` : '—';
+    const topicSummary = p?.topicScores ? Object.entries(p.topicScores).map(([tid,v])=>{
+      const t = TOPICS.find(x=>x.id===tid);
+      return `${t?t.title.split('.')[0]:tid}: ${v.score}/${v.total}`;
+    }).join(' • ') : '—';
+
+    const card = document.createElement('div');
+    card.className = 'card p-5';
+    card.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="display text-lg" style="color:var(--navy)">${s.name}</div>
+          <div class="text-xs" style="color:#a19c8a">@${s.username}</div>
+        </div>
+        <div class="flex items-center gap-3">
+          ${stageBadge(stage)}
+          <button class="btn btn-ghost btn-expand" data-u="${s.username}">Толығырақ</button>
+        </div>
+      </div>
+      <div class="text-xs mt-2" style="color:#7a7563">Олимпиада тест ұпайы: <b>${testScore}</b> • Тақырып тесттері: ${topicSummary}</div>
+      <div class="expand-body hidden mt-3 pt-3 border-t" style="border-color:var(--line)"></div>
+    `;
+    list.appendChild(card);
+
+    card.querySelector('.btn-expand').onclick = ()=>{
+      const body = card.querySelector('.expand-body');
+      if(!body.classList.contains('hidden')){ body.classList.add('hidden'); return; }
+      body.classList.remove('hidden');
+      if(!p || !p.essay){
+        body.innerHTML = `<div class="text-sm" style="color:#a19c8a">Эссе әлі тапсырылмаған.</div>`;
+        return;
+      }
+      body.innerHTML = `
+        <div class="eyebrow mb-1">Тапсырылған эссе</div>
+        <p class="text-sm whitespace-pre-wrap mb-2" style="color:#3a3626">${p.essay.text||''}</p>
+        ${p.essay.image?`<img src="${p.essay.image}" style="max-height:160px;border:1px solid var(--line);border-radius:4px">`:''}
+        ${p.test?`<div class="mt-3">
+          ${p.test.answers.map((a,i)=>`<div class="text-sm qa-row py-1">${i+1}. ${a.given||'—'} ${a.ok?'✓':'✗ (дұрысы: '+a.correct+')'}</div>`).join('')}
+        </div>`:''}
+      `;
+    };
+  }
+}
+
+/* ============================= ЖАЛПЫ РЕНДЕР / ШЫҒУ ============================= */
+
+function logout(){
+  clearInterval(STATE.timerHandle);
+  STATE.user = null;
+  STATE.view = 'auth';
+  STATE.studentTab='olymp';
+  STATE.activeTopic=null;
+  render();
+}
+
+function render(){
+  if(STATE.view==='auth') renderAuth();
+  else if(STATE.view==='student') renderStudent();
+  else if(STATE.view==='teacher') renderTeacher();
+}
+
+ensureSeed().then(render);
+</script>
 </body>
 </html>
