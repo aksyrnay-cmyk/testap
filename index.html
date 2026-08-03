@@ -57,7 +57,7 @@
             justify-content: center;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
         .music-btn:active {
@@ -70,7 +70,7 @@
             fill: currentColor;
         }
 
-        /* 1-секция: Басты сурет және есім */
+        /* 1-бөлім: Басты сурет және есім */
         .hero-section {
             position: relative;
             width: 100%;
@@ -113,7 +113,7 @@
             font-weight: 400;
         }
 
-        /* 2-секция: Шақыру матні және Календарь */
+        /* 2-бөлім: Шақыру мәтіні және Календарь */
         .details-section {
             padding: 30px 25px 40px;
             background-color: #4a0309;
@@ -189,7 +189,7 @@
             box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
         }
 
-        /* 3-секция: Мекен-жай блогы (2-сурет) */
+        /* 3-бөлім: Мекен-жай блогы */
         .location-section {
             background-color: #4a0309;
             padding: 20px 0 30px;
@@ -213,7 +213,6 @@
             padding: 35px 20px;
             margin-top: -1px;
             position: relative;
-            /* Жыртылған қағаз эффектісі */
             clip-path: polygon(
                 0% 0%, 5% 2%, 10% 0%, 15% 2%, 20% 0%, 25% 2%, 30% 0%, 35% 2%, 40% 0%, 45% 2%, 50% 0%, 55% 2%, 60% 0%, 65% 2%, 70% 0%, 75% 2%, 80% 0%, 85% 2%, 90% 0%, 95% 2%, 100% 0%,
                 100% 100%, 95% 98%, 90% 100%, 85% 98%, 80% 100%, 75% 98%, 70% 100%, 65% 98%, 60% 100%, 55% 98%, 50% 100%, 45% 98%, 40% 100%, 35% 98%, 30% 100%, 25% 98%, 20% 100%, 15% 98%, 10% 100%, 5% 98%, 0% 100%
@@ -254,7 +253,7 @@
             background-color: #6a0000;
         }
 
-        /* 4-секция: Той иелері */
+        /* 4-бөлім: Той иелері */
         .hosts-section {
             padding: 40px 20px 30px;
             background-color: #4a0309;
@@ -279,7 +278,7 @@
             font-weight: 400;
         }
 
-        /* 5-секция: Шаңырақ пен Қорытынды сөз (3-сурет) */
+        /* 5-бөлім: Шаңырақ пен соңғы сөз */
         .footer-section {
             position: relative;
             width: 100%;
@@ -313,21 +312,21 @@
 </head>
 <body>
 
-    <!-- Музыка қосу/өшіру батырмасы -->
+    <!-- Музыка батырмасы -->
     <button class="music-btn" id="musicToggle" aria-label="Музыка">
         <svg id="musicIcon" viewBox="0 0 24 24">
             <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
         </svg>
     </button>
 
-    <!-- Фондық әуен -->
-    <audio id="bgMusic" loop preload="auto">
+    <!-- Фондық музыка (GitHub-тағы music.mp3) -->
+    <audio id="bgMusic" loop preload="auto" autoplay>
         <source src="music.mp3" type="audio/mpeg">
     </audio>
 
     <div class="invitation-container">
 
-        <!-- 1-бөлім: Басты сурет және Есім -->
+        <!-- 1-бөлім: Басты сурет және есім -->
         <section class="hero-section">
             <div class="hero-overlay"></div>
             <div class="hero-content">
@@ -336,7 +335,7 @@
             </div>
         </section>
 
-        <!-- 2-бөлім: Шақыру матні, Уақыты және Календарь -->
+        <!-- 2-бөлім: Шақыру мәтіні, Уақыты және Күнтізбе -->
         <section class="details-section">
             <h2 class="section-header">Құрметті қонақтар!</h2>
             
@@ -353,7 +352,6 @@
                     <div>ПН</div><div>ВТ</div><div>СР</div><div>ЧТ</div><div>ПТ</div><div>СБ</div><div>ВС</div>
                 </div>
                 <div class="calendar-days">
-                    <!-- 1 Қыркүйек 2026 - Сейсенбіден басталады -->
                     <div class="day"></div>
                     <div class="day">1</div>
                     <div class="day">2</div>
@@ -375,7 +373,6 @@
                     <div class="day">16</div>
                     <div class="day">17</div>
                     <div class="day">18</div>
-                    <!-- 19 Қыркүйек дөңгелекпен белгіленген -->
                     <div class="day selected">19</div>
                     <div class="day">20</div>
 
@@ -434,39 +431,55 @@
 
     </div>
 
-    <!-- Музыканы басқару скрипті -->
+    <!-- Автоматты өлең ойнату скрипті -->
     <script>
         const audio = document.getElementById('bgMusic');
         const musicBtn = document.getElementById('musicToggle');
         let isPlaying = false;
 
-        // Пайдаланушы бірінші рет экранды басқанда автоойнату (браузер шектеулерін айналып өту)
-        function enableAutoplay() {
+        function playAudio() {
             if (!isPlaying) {
                 audio.play().then(() => {
                     isPlaying = true;
-                }).catch(() => {});
+                    if (musicBtn) musicBtn.style.opacity = '1';
+                }).catch(() => {
+                    isPlaying = false;
+                });
             }
-            document.removeEventListener('click', enableAutoplay);
-            document.removeEventListener('touchstart', enableAutoplay);
         }
 
-        document.addEventListener('click', enableAutoplay);
-        document.addEventListener('touchstart', enableAutoplay);
+        // Бет жүктелгенде ойнату
+        window.addEventListener('load', playAudio);
 
-        // Батырманы басқанда ойнату / тоқтату
-        musicBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (isPlaying) {
-                audio.pause();
-                isPlaying = false;
-                musicBtn.style.opacity = '0.6';
-            } else {
-                audio.play();
-                isPlaying = true;
-                musicBtn.style.opacity = '1';
-            }
+        // Бетте кез келген әрекет жасалғанда (скролл, басу, тию) ойнату
+        const userEvents = ['click', 'touchstart', 'scroll', 'touchmove'];
+        
+        function handleFirstInteraction() {
+            playAudio();
+            userEvents.forEach(event => {
+                document.removeEventListener(event, handleFirstInteraction);
+            });
+        }
+
+        userEvents.forEach(event => {
+            document.addEventListener(event, handleFirstInteraction, { passive: true });
         });
+
+        // Музыка батырмасын басу
+        if (musicBtn) {
+            musicBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (isPlaying) {
+                    audio.pause();
+                    isPlaying = false;
+                    musicBtn.style.opacity = '0.6';
+                } else {
+                    audio.play();
+                    isPlaying = true;
+                    musicBtn.style.opacity = '1';
+                }
+            });
+        }
     </script>
 </body>
 </html>
